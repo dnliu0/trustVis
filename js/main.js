@@ -11,9 +11,9 @@ var colorScale = d3.scaleOrdinal();
 // Variables for the visualization instances
 var areachart, timeline;
 
-var margin = {top: 80, right: 50, bottom: 30, left: 150},
-    width = 700 - margin.left - margin.right,
-    height = 600 - margin.top - margin.bottom;
+var margin = {top: 80, right: 50, bottom: 30, left: 150}
+
+var width, height;
 
 loadData();
 
@@ -43,11 +43,51 @@ function loadData() {
             })
         })
         select.onchange = function(){
-            if (value === 'question') {
+            
+            if (this.value === 'question') {
+                d3.select("#dataviz").select("." + value).remove();
+                value = this.value;
+                let unique_scale = Array.from(new Set(allData.map((item) => item.likertscale)));
+                let unique_type = Array.from(new Set(allData.map((item) => item.vistype)));
+            
 
+                let maxAvg = Math.max(...allData.map(d => d[value]))
+                
+                // create an array for each unique question
+                let question_type_avg = {};
+                let question_type_pics = {};
+                unique_questions.forEach(q => {
+                    question_type_pics[q] = [];
+                })
+                Object.entries(question_type_data).forEach(([key, values]) => {
+                    question_type_avg[key] = countHelper(values, 'image');
+                    question_type_pics[key] = Object.entries(question_type_avg[key]).sort((a, b) => b[1] - a[1]).slice(0,5);
+                })
+
+                Object.entries(question_type_pics).forEach(([key, values]) => {
+                    if(key !== "Attention_Question") {
+                        var title = document.createElement("h2");
+                        title.innerHTML= key;
+                        var sub_title = document.createElement("p");
+                        sub_title.innerHTML= values[0].name;
+                        document.getElementById("viz").appendChild(title);
+                        document.getElementById("viz").appendChild(sub_title);
+                        values.forEach(d => {
+                            var elem = document.createElement("img");
+                            elem.setAttribute("src", "data/" + d[0]);
+                            elem.setAttribute("height", "100");
+                            elem.setAttribute("alt", "vis");
+                            document.getElementById("viz").appendChild(elem);
+                        })
+                    }
+                    
+                })
             } else {
                 d3.select("#dataviz").select("." + value).remove();
                 value = this.value;
+                let unique_vals = Array.from(new Set(allData.map((item) => item[value])));
+                width = 700 - margin.left - margin.right;
+                height = (60 * unique_vals.length) - margin.top - margin.bottom;
                 likertToAgree = ['Strongly Disagree', 'Disagree', 'Nor', 'Agree', 'Strongly Agree']
                 
                 title.innerHTML= value;
@@ -55,57 +95,13 @@ function loadData() {
                
                
                 var currGroup = d3.select("#dataviz").append("g").attr("class", value);
-                createVis(allData, value, currGroup, question_type_data);
+                createVis(allData, value, currGroup, question_type_data, unique_vals);
             }
             
             
         }
 
-        let unique_scale = Array.from(new Set(allData.map((item) => item.likertscale)));
-        let unique_type = Array.from(new Set(allData.map((item) => item.vistype)));
-       
-
-        let maxAvg = Math.max(...allData.map(d => d[value]))
         
-        // create an array for each unique question
-        let question_type_avg = {};
-        let question_type_pics = {};
-        unique_questions.forEach(q => {
-            question_type_pics[q] = [];
-        })
-        Object.entries(question_type_data).forEach(([key, values]) => {
-            question_type_avg[key] = countHelper(values, 'image');
-            question_type_pics[key] = Object.entries(question_type_avg[key]).sort((a, b) => b[1] - a[1]).slice(0,5);
-        })
-        // Object.entries(question_type_data).forEach(([key, values]) => {
-        //     (question_type_data[key]).forEach(value => {
-        //         console.log(question_type_avg[key])
-        //         var match = Object.entries(question_type_avg[key]).forEach(([image, avg]) => {
-        //             if (image === value.image) {
-        //                 value.avg = 
-        //             }
-        //         })
-        //     })
-        // })
-
-        Object.entries(question_type_pics).forEach(([key, values]) => {
-            if(key !== "Attention_Question") {
-                var title = document.createElement("h2");
-                title.innerHTML= key;
-                var sub_title = document.createElement("p");
-                sub_title.innerHTML= values[0].name;
-                document.getElementById("viz").appendChild(title);
-                document.getElementById("viz").appendChild(sub_title);
-                values.forEach(d => {
-                    var elem = document.createElement("img");
-                    elem.setAttribute("src", "data/" + d[0]);
-                    elem.setAttribute("height", "100");
-                    elem.setAttribute("alt", "vis");
-                    document.getElementById("viz").appendChild(elem);
-                })
-            }
-            
-        })
         
         
         
@@ -138,15 +134,15 @@ function sumHelper(values) {
 }
 
 
-function createVis(allData, value, currGroup, question_type_data) {
-    createHeatMap(allData, value, currGroup, question_type_data);
+function createVis(allData, value, currGroup, question_type_data, unique_vals) {
+    createHeatMap(allData, value, currGroup, question_type_data, unique_vals);
 }
 
-function createHeatMap(allData, value, currGroup, question_type_data) {
+function createHeatMap(allData, value, currGroup, question_type_data, unique_vals) {
     let likertToAgree = ['Strongly Disagree', 'Disagree', 'Nor', 'Agree', 'Strongly Agree'];
     // let question_type_data = {};
    
-    let unique_vals = Array.from(new Set(allData.map((item) => item[value])));
+    
     
     var x = d3.scaleBand()
     .range([ 0, width ])
