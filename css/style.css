@@ -53,3 +53,11 @@ h2 {
   fill-opacity: .125;
   shape-rendering: crispEdges;
 }
+
+label {
+  margin-right: 8px;
+}
+
+.form-group {
+  padding-right: 20px;
+}
